@@ -35,4 +35,4 @@ java -cp out com.industrial.sensor.Main
 
 ## Autor
 
-Arthur — Projeto acadêmico sobre pilares da POO.
+Arthur — Projeto sobre pilares da POO.
