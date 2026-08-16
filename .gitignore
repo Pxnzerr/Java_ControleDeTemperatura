@@ -1,6 +1,26 @@
+# Compiled class files
 out/
 *.class
+
+# IDE files
 .idea/
 *.iml
 .vscode/
+.settings/
+.project
+.classpath
+*.swp
+*.swo
+
+# Package files
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# OS generated
 .DS_Store
+Thumbs.db
+Desktop.ini
