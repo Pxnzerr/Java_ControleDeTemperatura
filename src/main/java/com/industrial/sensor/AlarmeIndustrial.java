@@ -38,4 +38,9 @@ public class AlarmeIndustrial {
         trava.bloquear();
         return true;
     }
+
+    @Override
+    public String toString() {
+        return String.format("AlarmeIndustrial[ativo=%s, motivo='%s']", ativo, motivo);
+    }
 }

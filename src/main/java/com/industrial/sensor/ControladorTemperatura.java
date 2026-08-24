@@ -55,4 +55,10 @@ public class ControladorTemperatura {
     public boolean silenciarAlarme() {
         return alarme.desativar();
     }
+
+    @Override
+    public String toString() {
+        return String.format("ControladorTemperatura[sensor=%s, alarme=%s, limiteCritico=%.1f°C]",
+                sensor.getIdentificador(), alarme.isAtivo() ? "ATIVO" : "OK", limiteCritico);
+    }
 }

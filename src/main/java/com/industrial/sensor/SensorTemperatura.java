@@ -56,4 +56,10 @@ public class SensorTemperatura {
     private boolean leituraValida(double temperatura) {
         return temperatura >= TEMPERATURA_MINIMA && temperatura <= TEMPERATURA_MAXIMA;
     }
+
+    @Override
+    public String toString() {
+        return String.format("SensorTemperatura[id=%s, temp=%.1f°C, operacional=%s]",
+                identificador, temperaturaAtual, operacional);
+    }
 }

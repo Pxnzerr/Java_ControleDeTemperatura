@@ -44,4 +44,9 @@ public class TravaSeguranca {
     void bloquear() {
         liberada = false;
     }
+
+    @Override
+    public String toString() {
+        return String.format("TravaSeguranca[liberada=%s, tentativasFalhas=%d]", liberada, tentativasFalhas);
+    }
 }
