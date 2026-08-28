@@ -34,6 +34,15 @@ public class SensorTemperatura {
         return operacional;
     }
 
+    public static double getTemperaturaMinima() {
+        return TEMPERATURA_MINIMA;
+    }
+
+    public static double getTemperaturaMaxima() {
+        return TEMPERATURA_MAXIMA;
+    }
+
+
     /**
      * Registra leitura somente se estiver dentro dos limites físicos do maquinário.
      * Retorna false quando a leitura é rejeitada por segurança.

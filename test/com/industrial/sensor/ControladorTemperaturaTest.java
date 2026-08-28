@@ -1,0 +1,289 @@
+package com.industrial.sensor;
+
+import java.util.Objects;
+
+/**
+ * Suíte de Testes Automatizados para o Controlador de Sensor de Temperatura Industrial.
+ * Valida 100% das regras de encapsulamento, integridade física, alarmes e travas de segurança.
+ */
+public class ControladorTemperaturaTest {
+
+    private static int testesExecutados = 0;
+    private static int testesPassaram = 0;
+    private static int testesFalharam = 0;
+
+    public static void main(String[] args) {
+        System.out.println("==================================================================");
+        System.out.println("   SUITE DE TESTES: CONTROLADOR DE SENSOR DE TEMPERATURA");
+        System.out.println("==================================================================\n");
+
+        executarTeste("Sensor: Criação e valores iniciais padrão", ControladorTemperaturaTest::testSensorCriacaoEValoresIniciais);
+        executarTeste("Sensor: Rejeição de identificador nulo ou vazio", ControladorTemperaturaTest::testSensorValidacaoIdentificador);
+        executarTeste("Sensor: Registro de leitura válida em diferentes faixas", ControladorTemperaturaTest::testSensorRegistroLeituraValida);
+        executarTeste("Sensor: Rejeição de leituras fora dos limites físicos (-40°C a 850°C)", ControladorTemperaturaTest::testSensorRejeicaoLeituraForaDosLimites);
+        executarTeste("Sensor: Inoperante rejeita novas leituras", ControladorTemperaturaTest::testSensorInoperanteRejeitaLeituras);
+        executarTeste("Trava: Validação de tamanho mínimo da credencial", ControladorTemperaturaTest::testTravaSegurancaValidacaoCredencial);
+        executarTeste("Trava: Autenticação bem-sucedida", ControladorTemperaturaTest::testTravaSegurancaAutenticacaoSucesso);
+        executarTeste("Trava: Bloqueio permanente após 3 tentativas inválidas consecutivas", ControladorTemperaturaTest::testTravaSegurancaBloqueioAposTresFalhas);
+        executarTeste("Alarme: Disparo e impedimento de silenciamento sem trava liberada", ControladorTemperaturaTest::testAlarmeDisparoEBloqueioSilenciamento);
+        executarTeste("Alarme: Silenciamento autorizado com trava liberada e rebloqueio automático", ControladorTemperaturaTest::testAlarmeSilenciamentoComTrava);
+        executarTeste("Controlador: Processamento normal de leituras dentro da faixa segura", ControladorTemperaturaTest::testControladorProcessamentoNormal);
+        executarTeste("Controlador: Disparo de alarme crítico e desativação do sensor", ControladorTemperaturaTest::testControladorDisparoCritico);
+        executarTeste("Controlador: Fluxo completo de autenticação do operador e silenciamento", ControladorTemperaturaTest::testControladorFluxoAutenticacaoESilenciamento);
+        executarTeste("Controlador: Validação de limite crítico superior à temperatura inicial", ControladorTemperaturaTest::testControladorValidacaoLimiteCritico);
+        executarTeste("Modelos: Representação textual toString() informativa", ControladorTemperaturaTest::testModelosToString);
+
+        System.out.println("\n==================================================================");
+        System.out.printf("   RESULTADO: %d Executados | %d Passaram | %d Falharam%n",
+                testesExecutados, testesPassaram, testesFalharam);
+        System.out.println("==================================================================");
+
+        if (testesFalharam > 0) {
+            System.exit(1);
+        }
+    }
+
+    private static void executarTeste(String descricao, Runnable teste) {
+        testesExecutados++;
+        try {
+            teste.run();
+            testesPassaram++;
+            System.out.printf("  [OK] %s%n", descricao);
+        } catch (AssertionError | Exception e) {
+            testesFalharam++;
+            System.out.printf("  [FALHA] %s -> %s%n", descricao, e.getMessage());
+        }
+    }
+
+    private static void assertTrue(boolean condicao, String mensagem) {
+        if (!condicao) {
+            throw new AssertionError(mensagem);
+        }
+    }
+
+    private static void assertFalse(boolean condicao, String mensagem) {
+        if (condicao) {
+            throw new AssertionError(mensagem);
+        }
+    }
+
+    private static void assertEquals(Object esperado, Object atual, String mensagem) {
+        if (!Objects.equals(esperado, atual)) {
+            throw new AssertionError(String.format("%s [Esperado: %s, Atual: %s]", mensagem, esperado, atual));
+        }
+    }
+
+    private static void assertEqualsDouble(double esperado, double atual, double delta, String mensagem) {
+        if (Math.abs(esperado - atual) > delta) {
+            throw new AssertionError(String.format("%s [Esperado: %.2f, Atual: %.2f]", mensagem, esperado, atual));
+        }
+    }
+
+    // --- TESTES DE UNIDADE ---
+
+    private static void testSensorCriacaoEValoresIniciais() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-001");
+        assertEquals("SNS-001", sensor.getIdentificador(), "Identificador deve corresponder ao informado");
+        assertEqualsDouble(25.0, sensor.getTemperaturaAtual(), 0.001, "Temperatura inicial padrão deve ser 25.0°C");
+        assertTrue(sensor.isOperacional(), "Sensor recém-criado deve estar operacional");
+        assertEqualsDouble(-40.0, SensorTemperatura.getTemperaturaMinima(), 0.001, "Temperatura mínima deve ser -40°C");
+        assertEqualsDouble(850.0, SensorTemperatura.getTemperaturaMaxima(), 0.001, "Temperatura máxima deve ser 850°C");
+    }
+
+    private static void testSensorValidacaoIdentificador() {
+        boolean excecaoNulo = false;
+        try {
+            new SensorTemperatura(null);
+        } catch (IllegalArgumentException e) {
+            excecaoNulo = true;
+        }
+        assertTrue(excecaoNulo, "Deve rejeitar identificador nulo com IllegalArgumentException");
+
+        boolean excecaoVazio = false;
+        try {
+            new SensorTemperatura("   ");
+        } catch (IllegalArgumentException e) {
+            excecaoVazio = true;
+        }
+        assertTrue(excecaoVazio, "Deve rejeitar identificador vazio com IllegalArgumentException");
+    }
+
+    private static void testSensorRegistroLeituraValida() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-002");
+
+        assertTrue(sensor.registrarLeitura(-40.0), "Limite inferior (-40°C) deve ser aceito");
+        assertEqualsDouble(-40.0, sensor.getTemperaturaAtual(), 0.001, "Temperatura atual deve ser -40°C");
+
+        assertTrue(sensor.registrarLeitura(850.0), "Limite superior (850°C) deve ser aceito");
+        assertEqualsDouble(850.0, sensor.getTemperaturaAtual(), 0.001, "Temperatura atual deve ser 850°C");
+
+        assertTrue(sensor.registrarLeitura(150.5), "Leitura intermediária (150.5°C) deve ser aceita");
+        assertEqualsDouble(150.5, sensor.getTemperaturaAtual(), 0.001, "Temperatura atual deve ser 150.5°C");
+    }
+
+    private static void testSensorRejeicaoLeituraForaDosLimites() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-003");
+        sensor.registrarLeitura(50.0);
+
+        assertFalse(sensor.registrarLeitura(-40.1), "Leitura abaixo do limite físico (-40.1°C) deve ser rejeitada");
+        assertEqualsDouble(50.0, sensor.getTemperaturaAtual(), 0.001, "Temperatura deve ser mantida inalterada");
+
+        assertFalse(sensor.registrarLeitura(850.1), "Leitura acima do limite físico (850.1°C) deve ser rejeitada");
+        assertEqualsDouble(50.0, sensor.getTemperaturaAtual(), 0.001, "Temperatura deve ser mantida inalterada");
+
+        assertFalse(sensor.registrarLeitura(9999.0), "Leitura extrema (9999°C) deve ser rejeitada");
+        assertEqualsDouble(50.0, sensor.getTemperaturaAtual(), 0.001, "Temperatura deve ser mantida inalterada");
+    }
+
+    private static void testSensorInoperanteRejeitaLeituras() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-004");
+        sensor.marcarInoperante();
+
+        assertFalse(sensor.isOperacional(), "Sensor deve estar inoperante");
+        assertFalse(sensor.registrarLeitura(30.0), "Sensor inoperante não deve aceitar novas leituras");
+        assertEqualsDouble(25.0, sensor.getTemperaturaAtual(), 0.001, "Temperatura não deve ser alterada");
+    }
+
+    private static void testTravaSegurancaValidacaoCredencial() {
+        boolean excecaoNulo = false;
+        try {
+            new TravaSeguranca(null);
+        } catch (IllegalArgumentException e) {
+            excecaoNulo = true;
+        }
+        assertTrue(excecaoNulo, "Deve rejeitar credencial nula");
+
+        boolean excecaoCurta = false;
+        try {
+            new TravaSeguranca("123");
+        } catch (IllegalArgumentException e) {
+            excecaoCurta = true;
+        }
+        assertTrue(excecaoCurta, "Deve rejeitar credencial com menos de 4 caracteres");
+    }
+
+    private static void testTravaSegurancaAutenticacaoSucesso() {
+        TravaSeguranca trava = new TravaSeguranca("AUTH-99");
+        assertFalse(trava.isLiberada(), "Trava deve iniciar bloqueada");
+
+        boolean autenticado = trava.autenticar("AUTH-99");
+        assertTrue(autenticado, "Autenticação com credencial correta deve retornar true");
+        assertTrue(trava.isLiberada(), "Trava deve ficar liberada após autenticação");
+    }
+
+    private static void testTravaSegurancaBloqueioAposTresFalhas() {
+        TravaSeguranca trava = new TravaSeguranca("SENHA-CORRETA");
+
+        assertFalse(trava.autenticar("ERRADA_1"), "1ª tentativa inválida deve falhar");
+        assertFalse(trava.isLiberada(), "Trava não deve ser liberada");
+
+        assertFalse(trava.autenticar("ERRADA_2"), "2ª tentativa inválida deve falhar");
+        assertFalse(trava.isLiberada(), "Trava não deve ser liberada");
+
+        assertFalse(trava.autenticar("ERRADA_3"), "3ª tentativa inválida deve falhar");
+        assertFalse(trava.isLiberada(), "Trava não deve ser liberada");
+
+        // 4ª tentativa mesmo com a credencial correta DEVE FALHAR devido ao bloqueio
+        assertFalse(trava.autenticar("SENHA-CORRETA"), "Tentativa após 3 falhas deve ser bloqueada permanentemente");
+        assertFalse(trava.isLiberada(), "Trava deve permanecer bloqueada");
+    }
+
+    private static void testAlarmeDisparoEBloqueioSilenciamento() {
+        TravaSeguranca trava = new TravaSeguranca("5544");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+
+        assertFalse(alarme.isAtivo(), "Alarme deve iniciar inativo");
+        alarme.disparar("Superaquecimento");
+        assertTrue(alarme.isAtivo(), "Alarme deve estar ativo após disparo");
+        assertEquals("Superaquecimento", alarme.getMotivo(), "Motivo do alarme deve corresponder");
+
+        // Tentativa de silenciar sem destravar a trava de segurança
+        boolean silenciado = alarme.desativar();
+        assertFalse(silenciado, "Não deve ser possível silenciar o alarme sem liberar a trava de segurança");
+        assertTrue(alarme.isAtivo(), "Alarme deve continuar ativo");
+    }
+
+    private static void testAlarmeSilenciamentoComTrava() {
+        TravaSeguranca trava = new TravaSeguranca("5544");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        alarme.disparar("Perigo térmico");
+
+        trava.autenticar("5544");
+        assertTrue(trava.isLiberada(), "Trava deve estar liberada para silenciamento");
+
+        boolean silenciado = alarme.desativar();
+        assertTrue(silenciado, "Silenciamento autorizado deve retornar true");
+        assertFalse(alarme.isAtivo(), "Alarme deve estar inativo após desativação");
+        assertFalse(trava.isLiberada(), "Trava deve ser automaticamente rebloqueada após o silenciamento");
+    }
+
+    private static void testControladorProcessamentoNormal() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-NORM");
+        TravaSeguranca trava = new TravaSeguranca("8888");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 100.0);
+
+        boolean processado = controlador.processarLeitura(75.0);
+        assertTrue(processado, "Leitura dentro do limite seguro deve ser processada com sucesso");
+        assertEqualsDouble(75.0, controlador.getSensor().getTemperaturaAtual(), 0.001, "Temperatura do sensor deve atualizar");
+        assertFalse(controlador.getAlarme().isAtivo(), "Alarme não deve ser disparado em temperatura segura");
+        assertTrue(controlador.getSensor().isOperacional(), "Sensor deve permanecer operacional");
+    }
+
+    private static void testControladorDisparoCritico() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-CRIT");
+        TravaSeguranca trava = new TravaSeguranca("8888");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 100.0);
+
+        boolean processado = controlador.processarLeitura(100.0);
+        assertTrue(processado, "Leitura crítica deve ser registrada");
+        assertTrue(controlador.getAlarme().isAtivo(), "Alarme deve ser ativado imediatamente ao atingir o limite crítico");
+        assertFalse(controlador.getSensor().isOperacional(), "Sensor deve ser marcado como inoperante por segurança");
+    }
+
+    private static void testControladorFluxoAutenticacaoESilenciamento() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-FLOW");
+        TravaSeguranca trava = new TravaSeguranca("4821");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 120.0);
+
+        controlador.processarLeitura(135.0);
+        assertTrue(controlador.getAlarme().isAtivo(), "Alarme deve estar ativo");
+
+        // Silenciar sem autenticar falha
+        assertFalse(controlador.silenciarAlarme(), "Silenciamento sem credencial deve ser rejeitado");
+        assertTrue(controlador.getAlarme().isAtivo(), "Alarme continua ativo");
+
+        // Autentica operador e silencia com sucesso
+        assertTrue(controlador.autenticarOperador("4821"), "Autenticação do operador deve ser bem-sucedida");
+        assertTrue(controlador.silenciarAlarme(), "Silenciamento após autenticação deve ter sucesso");
+        assertFalse(controlador.getAlarme().isAtivo(), "Alarme deve estar desligado");
+    }
+
+    private static void testControladorValidacaoLimiteCritico() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-VAL"); // temp inicial = 25.0°C
+        TravaSeguranca trava = new TravaSeguranca("1234");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+
+        boolean excecaoLancada = false;
+        try {
+            new ControladorTemperatura(sensor, alarme, trava, 25.0);
+        } catch (IllegalArgumentException e) {
+            excecaoLancada = true;
+        }
+        assertTrue(excecaoLancada, "Deve rejeitar limite crítico menor ou igual à temperatura inicial");
+    }
+
+    private static void testModelosToString() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-TST");
+        TravaSeguranca trava = new TravaSeguranca("9999");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 150.0);
+
+        assertTrue(sensor.toString().contains("SNS-TST"), "toString do sensor deve conter o identificador");
+        assertTrue(trava.toString().contains("TravaSeguranca"), "toString da trava deve conter nome da classe");
+        assertTrue(alarme.toString().contains("AlarmeIndustrial"), "toString do alarme deve conter nome da classe");
+        assertTrue(controlador.toString().contains("ControladorTemperatura"), "toString do controlador deve conter nome da classe");
+    }
+}
