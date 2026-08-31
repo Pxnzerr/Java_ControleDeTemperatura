@@ -5,7 +5,7 @@ public class ControladorTemperatura {
     private final SensorTemperatura sensor;
     private final AlarmeIndustrial alarme;
     private final TravaSeguranca trava;
-    private final double limiteCritico;
+    private double limiteCritico;
 
     public ControladorTemperatura(SensorTemperatura sensor, AlarmeIndustrial alarme,
                                     TravaSeguranca trava, double limiteCritico) {
@@ -54,6 +54,61 @@ public class ControladorTemperatura {
 
     public boolean silenciarAlarme() {
         return alarme.desativar();
+    }
+
+    /**
+     * Ajusta o limite crítico com segurança, exigindo autenticação do operador.
+     * Retorna false se a autenticação falhar ou o novo limite for inválido.
+     */
+    public boolean ajustarLimiteCritico(double novoLimite, String credencial) {
+        if (!trava.autenticar(credencial)) {
+            return false;
+        }
+        if (novoLimite <= sensor.getTemperaturaAtual() || novoLimite > SensorTemperatura.getTemperaturaMaxima()) {
+            trava.bloquear();
+            return false;
+        }
+        this.limiteCritico = novoLimite;
+        trava.bloquear();
+        return true;
+    }
+
+    /**
+     * Rearma o sensor e desativa alarmes residuais sob autenticação do operador.
+     * Rejeita se a temperatura atual ainda estiver acima do limite crítico.
+     */
+    public boolean rearmarSistema(String credencial) {
+        if (!trava.autenticar(credencial)) {
+            return false;
+        }
+        if (sensor.getTemperaturaAtual() >= limiteCritico) {
+            trava.bloquear();
+            return false;
+        }
+        sensor.rearmar();
+        alarme.desativar();
+        trava.bloquear();
+        return true;
+    }
+
+    /**
+     * Gera um relatório estruturado de diagnóstico com métricas de telemetria e segurança.
+     */
+    public String gerarRelatorioDiagnostico() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== RELATÓRIO DIAGNÓSTICO DO SISTEMA ===\n");
+        sb.append(String.format("Sensor: %s | Status: %s\n",
+                sensor.getIdentificador(), sensor.isOperacional() ? "OPERACIONAL" : "INOPERANTE"));
+        sb.append(String.format("Temperatura Atual: %.1f°C | Média: %.1f°C (Total Leituras: %d)\n",
+                sensor.getTemperaturaAtual(), sensor.getTemperaturaMedia(), sensor.getTotalLeituras()));
+        sb.append(String.format("Extremos Térmicos: Mín %.1f°C | Máx %.1f°C\n",
+                sensor.getTemperaturaMinimaRegistrada(), sensor.getTemperaturaMaximaRegistrada()));
+        sb.append(String.format("Limite Crítico Configurado: %.1f°C\n", limiteCritico));
+        sb.append(String.format("Alarme Industrial: %s%s\n",
+                alarme.isAtivo() ? "ATIVO" : "OK",
+                alarme.isAtivo() ? " (Motivo: " + alarme.getMotivo() + ")" : ""));
+        sb.append("=========================================");
+        return sb.toString();
     }
 
     @Override
