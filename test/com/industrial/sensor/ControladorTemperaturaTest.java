@@ -31,6 +31,10 @@ public class ControladorTemperaturaTest {
         executarTeste("Controlador: Disparo de alarme crítico e desativação do sensor", ControladorTemperaturaTest::testControladorDisparoCritico);
         executarTeste("Controlador: Fluxo completo de autenticação do operador e silenciamento", ControladorTemperaturaTest::testControladorFluxoAutenticacaoESilenciamento);
         executarTeste("Controlador: Validação de limite crítico superior à temperatura inicial", ControladorTemperaturaTest::testControladorValidacaoLimiteCritico);
+        executarTeste("Controlador: Ajuste seguro de limite crítico com credencial", ControladorTemperaturaTest::testControladorAjusteSeguroLimiteCritico);
+        executarTeste("Controlador: Rearme do sistema e restauração operacional pós-incidente", ControladorTemperaturaTest::testControladorRearmeSistema);
+        executarTeste("Controlador: Geração de relatório de diagnóstico estruturado", ControladorTemperaturaTest::testControladorRelatorioDiagnostico);
+        executarTeste("Sensor: Telemetria histórica, médias e imutabilidade de leituras", ControladorTemperaturaTest::testSensorHistoricoEEstatisticasTermicas);
         executarTeste("Modelos: Representação textual toString() informativa", ControladorTemperaturaTest::testModelosToString);
 
         System.out.println("\n==================================================================");
@@ -273,6 +277,92 @@ public class ControladorTemperaturaTest {
             excecaoLancada = true;
         }
         assertTrue(excecaoLancada, "Deve rejeitar limite crítico menor ou igual à temperatura inicial");
+    }
+
+    private static void testSensorHistoricoEEstatisticasTermicas() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-HIST");
+        assertEquals(1, sensor.getTotalLeituras(), "Sensor deve iniciar com 1 leitura registrada (temperatura inicial)");
+        assertEqualsDouble(25.0, sensor.getTemperaturaMedia(), 0.001, "Média inicial deve ser 25.0°C");
+
+        sensor.registrarLeitura(35.0);
+        sensor.registrarLeitura(45.0);
+        sensor.registrarLeitura(15.0);
+
+        assertEquals(4, sensor.getTotalLeituras(), "Total de leituras válidas deve ser 4");
+        assertEqualsDouble(15.0, sensor.getTemperaturaMinimaRegistrada(), 0.001, "Mínima registrada deve ser 15.0°C");
+        assertEqualsDouble(45.0, sensor.getTemperaturaMaximaRegistrada(), 0.001, "Máxima registrada deve ser 45.0°C");
+        assertEqualsDouble(30.0, sensor.getTemperaturaMedia(), 0.001, "Média deve ser (25+35+45+15)/4 = 30.0°C");
+
+        // Validação de encapsulamento e imutabilidade da lista de histórico
+        boolean modificacaoBloqueada = false;
+        try {
+            sensor.getHistoricoLeituras().add(999.0);
+        } catch (UnsupportedOperationException e) {
+            modificacaoBloqueada = true;
+        }
+        assertTrue(modificacaoBloqueada, "Histórico retornado pelo sensor deve ser imutável para proteger o encapsulamento");
+    }
+
+    private static void testControladorAjusteSeguroLimiteCritico() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-AJUSTE");
+        TravaSeguranca trava = new TravaSeguranca("7777");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 100.0);
+
+        // Credencial inválida deve falhar
+        boolean ajustadoInvalido = controlador.ajustarLimiteCritico(150.0, "0000");
+        assertFalse(ajustadoInvalido, "Ajuste com credencial errada deve ser rejeitado");
+        assertEqualsDouble(100.0, controlador.getLimiteCritico(), 0.001, "Limite crítico não deve ter mudado");
+
+        // Limite menor ou igual à temperatura atual deve falhar
+        boolean ajustadoAbaixo = controlador.ajustarLimiteCritico(20.0, "7777");
+        assertFalse(ajustadoAbaixo, "Ajuste com limite inferior à temperatura atual deve ser rejeitado");
+
+        // Ajuste válido com credencial correta
+        boolean ajustadoSucesso = controlador.ajustarLimiteCritico(180.0, "7777");
+        assertTrue(ajustadoSucesso, "Ajuste válido com credencial correta deve ter sucesso");
+        assertEqualsDouble(180.0, controlador.getLimiteCritico(), 0.001, "Limite crítico deve ser atualizado para 180.0°C");
+        assertFalse(controlador.getTrava().isLiberada(), "Trava de segurança deve permanecer bloqueada após a operação");
+    }
+
+    private static void testControladorRearmeSistema() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-REARME");
+        TravaSeguranca trava = new TravaSeguranca("3333");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 90.0);
+
+        controlador.processarLeitura(95.0); // Dispara alarme e inativa sensor
+        assertTrue(controlador.getAlarme().isAtivo(), "Alarme deve estar ativo");
+        assertFalse(controlador.getSensor().isOperacional(), "Sensor deve estar inoperante");
+
+        // Rearme sem autenticação deve falhar
+        assertFalse(controlador.rearmarSistema("errada"), "Rearme sem autenticação deve falhar");
+
+        // Rearme com temperatura ainda crítica deve ser impedido por segurança
+        assertFalse(controlador.rearmarSistema("3333"), "Rearme com temperatura acima do limite crítico deve ser bloqueado");
+
+        // Ajustando o limite acima da temperatura atual para permitir rearme seguro
+        controlador.ajustarLimiteCritico(120.0, "3333");
+        boolean rearmado = controlador.rearmarSistema("3333");
+        assertTrue(rearmado, "Rearme com condições seguras e credencial válida deve ter sucesso");
+        assertTrue(controlador.getSensor().isOperacional(), "Sensor deve voltar ao estado operacional");
+        assertFalse(controlador.getAlarme().isAtivo(), "Alarme deve ser desativado após o rearme");
+    }
+
+    private static void testControladorRelatorioDiagnostico() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-DIAG");
+        TravaSeguranca trava = new TravaSeguranca("1234");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 100.0);
+
+        controlador.processarLeitura(40.0);
+        controlador.processarLeitura(60.0);
+
+        String relatorio = controlador.gerarRelatorioDiagnostico();
+        assertTrue(relatorio.contains("RELATÓRIO DIAGNÓSTICO DO SISTEMA"), "Relatório deve conter cabeçalho");
+        assertTrue(relatorio.contains("SNS-DIAG"), "Relatório deve conter identificador do sensor");
+        assertTrue(relatorio.contains("OPERACIONAL"), "Relatório deve conter status operacional");
+        assertTrue(relatorio.contains("60.0°C"), "Relatório deve conter temperatura atual");
     }
 
     private static void testModelosToString() {

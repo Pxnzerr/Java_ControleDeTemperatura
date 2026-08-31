@@ -14,6 +14,7 @@ public class Main {
         demonstrarLeituraInvalida(controlador);
         demonstrarAlarmeSemAutenticacao(controlador);
         demonstrarAlarmeComAutenticacao(controlador);
+        demonstrarRelatorioDiagnostico(controlador);
     }
 
     private static void demonstrarLeituraValida(ControladorTemperatura controlador) {
@@ -49,6 +50,11 @@ public class Main {
 
         boolean silenciado = controlador.silenciarAlarme();
         System.out.println("   Silenciado: " + silenciado);
-        System.out.println("   Alarme: " + (controlador.getAlarme().isAtivo() ? "ATIVO" : "inativo"));
+        System.out.println("   Alarme: " + (controlador.getAlarme().isAtivo() ? "ATIVO" : "inativo") + "\n");
+    }
+
+    private static void demonstrarRelatorioDiagnostico(ControladorTemperatura controlador) {
+        System.out.println("[5] Relatório de Diagnóstico Industrial e Telemetria:");
+        System.out.println(controlador.gerarRelatorioDiagnostico());
     }
 }

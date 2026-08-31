@@ -4,25 +4,25 @@ Sistema Java que demonstra **encapsulamento** aplicado a um ambiente industrial,
 
 ## Conceitos de encapsulamento
 
-| Componente | Proteção |
+| Componente | Proteção e Recursos |
 |---|---|
-| `SensorTemperatura` | Leituras privadas; validação interna rejeita valores fisicamente impossíveis (-40°C a 850°C) |
-| `AlarmeIndustrial` | Estado do alarme inacessível externamente; desativação exige trava liberada |
-| `TravaSeguranca` | Credencial privada; bloqueio após 3 tentativas inválidas |
-| `ControladorTemperatura` | Orquestra leituras e alarmes sem expor estado interno crítico |
+| `SensorTemperatura` | Leituras privadas com validação interna (-40°C a 850°C), telemetria com histórico imutável (`Collections.unmodifiableList`), cálculo de médias e extremos térmicos |
+| `AlarmeIndustrial` | Estado do alarme inacessível externamente; desativação exige trava liberada e rebloqueio automático |
+| `TravaSeguranca` | Credencial privada; bloqueio permanente após 3 tentativas consecutivas inválidas |
+| `ControladorTemperatura` | Orquestra leituras, aciona alarmes, permite ajuste seguro de limite e rearme sob credencial, e gera relatório de diagnóstico estruturado |
 
 ## Estrutura
 
 ```
 .
 ├── src/main/java/com/industrial/sensor/
-│   ├── SensorTemperatura.java
-│   ├── AlarmeIndustrial.java
-│   ├── TravaSeguranca.java
-│   ├── ControladorTemperatura.java
-│   └── Main.java
+│   ├── SensorTemperatura.java            # Sensor com telemetria e estatísticas térmicas
+│   ├── AlarmeIndustrial.java             # Alarme com controle de trava
+│   ├── TravaSeguranca.java               # Trava com credencial e bloqueio por falhas
+│   ├── ControladorTemperatura.java       # Orquestrador com ajuste seguro e diagnóstico
+│   └── Main.java                         # Demonstração interativa no terminal
 ├── test/com/industrial/sensor/
-│   └── ControladorTemperaturaTest.java   # Suíte de testes automatizados (15 testes)
+│   └── ControladorTemperaturaTest.java   # Suíte de testes automatizados (19 testes)
 ├── run.bat                               # Script de execução (Windows)
 ├── run.sh                                # Script de execução (Linux/macOS)
 ├── test.bat                              # Script de testes (Windows)
