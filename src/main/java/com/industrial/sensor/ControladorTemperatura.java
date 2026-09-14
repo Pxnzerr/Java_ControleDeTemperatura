@@ -1,5 +1,7 @@
 package com.industrial.sensor;
 
+import java.util.Locale;
+
 public class ControladorTemperatura {
 
     private final SensorTemperatura sensor;
@@ -99,11 +101,11 @@ public class ControladorTemperatura {
         sb.append("=== RELATÓRIO DIAGNÓSTICO DO SISTEMA ===\n");
         sb.append(String.format("Sensor: %s | Status: %s\n",
                 sensor.getIdentificador(), sensor.isOperacional() ? "OPERACIONAL" : "INOPERANTE"));
-        sb.append(String.format("Temperatura Atual: %.1f°C | Média: %.1f°C (Total Leituras: %d)\n",
+        sb.append(String.format(Locale.US, "Temperatura Atual: %.1f°C | Média: %.1f°C (Total Leituras: %d)\n",
                 sensor.getTemperaturaAtual(), sensor.getTemperaturaMedia(), sensor.getTotalLeituras()));
-        sb.append(String.format("Extremos Térmicos: Mín %.1f°C | Máx %.1f°C\n",
+        sb.append(String.format(Locale.US, "Extremos Térmicos: Mín %.1f°C | Máx %.1f°C\n",
                 sensor.getTemperaturaMinimaRegistrada(), sensor.getTemperaturaMaximaRegistrada()));
-        sb.append(String.format("Limite Crítico Configurado: %.1f°C\n", limiteCritico));
+        sb.append(String.format(Locale.US, "Limite Crítico Configurado: %.1f°C\n", limiteCritico));
         sb.append(String.format("Alarme Industrial: %s%s\n",
                 alarme.isAtivo() ? "ATIVO" : "OK",
                 alarme.isAtivo() ? " (Motivo: " + alarme.getMotivo() + ")" : ""));
