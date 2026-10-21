@@ -36,6 +36,7 @@ public class ControladorTemperaturaTest {
         executarTeste("Controlador: Geração de relatório de diagnóstico estruturado", ControladorTemperaturaTest::testControladorRelatorioDiagnostico);
         executarTeste("Sensor: Telemetria histórica, médias e imutabilidade de leituras", ControladorTemperaturaTest::testSensorHistoricoEEstatisticasTermicas);
         executarTeste("Sensor: Variação térmica (amplitude) e cálculo de oscilações", ControladorTemperaturaTest::testSensorVariacaoTermica);
+        executarTeste("Sensor: Detecção dinâmica de tendência térmica (aquecimento, resfriamento, estável)", ControladorTemperaturaTest::testSensorTendenciaTermica);
         executarTeste("Controlador: Margem de segurança térmica e status de operação segura", ControladorTemperaturaTest::testControladorMargemSegurancaEOperacaoSegura);
         executarTeste("Controlador: Classificação preditiva de níveis de alerta operacional", ControladorTemperaturaTest::testControladorNivelAlerta);
         executarTeste("Modelos: Representação textual toString() informativa", ControladorTemperaturaTest::testModelosToString);
@@ -369,6 +370,25 @@ public class ControladorTemperaturaTest {
         assertTrue(relatorio.contains("Variação: 35.0°C"), "Relatório deve conter variação térmica calculada");
         assertTrue(relatorio.contains("Margem de Segurança: 40.0°C"), "Relatório deve conter margem de segurança térmica");
         assertTrue(relatorio.contains("Nível de Alerta: NORMAL"), "Relatório deve conter o nível de alerta operacional");
+        assertTrue(relatorio.contains("Tendência Térmica: AQUECIMENTO"), "Relatório deve conter a tendência térmica recente");
+    }
+
+    private static void testSensorTendenciaTermica() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-TREND");
+        // Inicial com apenas 1 leitura (25.0°C) -> ESTAVEL
+        assertEquals(TendenciaTermica.ESTAVEL, sensor.getTendenciaTermica(), "Com 1 leitura, tendência deve ser ESTAVEL");
+
+        // Nova leitura subindo para 40.0°C -> AQUECIMENTO
+        sensor.registrarLeitura(40.0);
+        assertEquals(TendenciaTermica.AQUECIMENTO, sensor.getTendenciaTermica(), "Subida de temperatura deve indicar AQUECIMENTO");
+
+        // Nova leitura caindo para 30.0°C -> RESFRIAMENTO
+        sensor.registrarLeitura(30.0);
+        assertEquals(TendenciaTermica.RESFRIAMENTO, sensor.getTendenciaTermica(), "Queda de temperatura deve indicar RESFRIAMENTO");
+
+        // Oscilação desprezível (< 0.05°C) -> ESTAVEL
+        sensor.registrarLeitura(30.02);
+        assertEquals(TendenciaTermica.ESTAVEL, sensor.getTendenciaTermica(), "Oscilação desprezível deve indicar ESTAVEL");
     }
 
     private static void testControladorNivelAlerta() {

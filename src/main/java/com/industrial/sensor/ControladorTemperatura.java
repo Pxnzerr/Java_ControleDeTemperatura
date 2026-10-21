@@ -152,6 +152,8 @@ public class ControladorTemperatura {
                 alarme.isAtivo() ? " (Motivo: " + alarme.getMotivo() + ")" : ""));
         sb.append(String.format("Nível de Alerta: %s (%s)\n",
                 getNivelAlerta(), getNivelAlerta().getDescricao()));
+        sb.append(String.format("Tendência Térmica: %s (%s)\n",
+                sensor.getTendenciaTermica(), sensor.getTendenciaTermica().getDescricao()));
         sb.append("=========================================");
         return sb.toString();
     }

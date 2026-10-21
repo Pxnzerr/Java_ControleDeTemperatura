@@ -104,6 +104,26 @@ public class SensorTemperatura {
     }
 
     /**
+     * Determina a tendência térmica do maquinário comparando a temperatura atual
+     * com a medição imediatamente anterior.
+     * Retorna ESTAVEL caso haja apenas uma leitura ou oscilação menor que 0.05°C.
+     */
+    public TendenciaTermica getTendenciaTermica() {
+        int total = historicoLeituras.size();
+        if (total < 2) {
+            return TendenciaTermica.ESTAVEL;
+        }
+        double penultima = historicoLeituras.get(total - 2);
+        double diferenca = temperaturaAtual - penultima;
+        if (diferenca > 0.05) {
+            return TendenciaTermica.AQUECIMENTO;
+        } else if (diferenca < -0.05) {
+            return TendenciaTermica.RESFRIAMENTO;
+        }
+        return TendenciaTermica.ESTAVEL;
+    }
+
+    /**
      * Registra leitura somente se estiver dentro dos limites físicos do maquinário.
      * Retorna false quando a leitura é rejeitada por segurança.
      */
