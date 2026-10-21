@@ -39,6 +39,7 @@ public class ControladorTemperaturaTest {
         executarTeste("Sensor: Detecção dinâmica de tendência térmica (aquecimento, resfriamento, estável)", ControladorTemperaturaTest::testSensorTendenciaTermica);
         executarTeste("Controlador: Margem de segurança térmica e status de operação segura", ControladorTemperaturaTest::testControladorMargemSegurancaEOperacaoSegura);
         executarTeste("Controlador: Classificação preditiva de níveis de alerta operacional", ControladorTemperaturaTest::testControladorNivelAlerta);
+        executarTeste("Controlador: Exportação do relatório de diagnóstico para arquivo", ControladorTemperaturaTest::testControladorExportacaoRelatorio);
         executarTeste("Modelos: Representação textual toString() informativa", ControladorTemperaturaTest::testModelosToString);
 
         System.out.println("\n==================================================================");
@@ -443,6 +444,45 @@ public class ControladorTemperaturaTest {
         controlador.processarLeitura(105.0);
         assertEqualsDouble(-5.0, controlador.getMargemSeguranca(), 0.001, "Margem deve ser negativa (-5.0°C) em situação crítica");
         assertFalse(controlador.isOperacaoSegura(), "Operação não deve ser segura com alarme ativo e limite excedido");
+    }
+
+    private static void testControladorExportacaoRelatorio() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-EXP");
+        TravaSeguranca trava = new TravaSeguranca("1234");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 110.0);
+
+        controlador.processarLeitura(55.0);
+
+        // Validação de caminho nulo
+        boolean erroCaminhoNulo = false;
+        try {
+            controlador.exportarRelatorio(null);
+        } catch (IllegalArgumentException e) {
+            erroCaminhoNulo = true;
+        } catch (Exception e) {
+            // outras exceções
+        }
+        assertTrue(erroCaminhoNulo, "Deve lançar IllegalArgumentException para caminho nulo");
+
+        // Gravação em arquivo temporário e validação de conteúdo
+        try {
+            java.nio.file.Path tempFile = java.nio.file.Files.createTempFile("diag_test_", ".txt");
+            try {
+                controlador.exportarRelatorio(tempFile);
+                assertTrue(java.nio.file.Files.exists(tempFile), "Arquivo de relatório exportado deve existir");
+                String conteudo = java.nio.file.Files.readString(tempFile, java.nio.charset.StandardCharsets.UTF_8);
+                assertTrue(conteudo.contains("SNS-EXP"), "Arquivo deve conter o identificador do sensor");
+                assertTrue(conteudo.contains("55.0°C"), "Arquivo deve conter a temperatura registrada");
+                assertTrue(conteudo.contains("RELATÓRIO DIAGNÓSTICO DO SISTEMA"), "Arquivo deve conter o cabeçalho do relatório");
+                assertTrue(conteudo.contains("Nível de Alerta:"), "Arquivo deve conter o nível de alerta");
+                assertTrue(conteudo.contains("Tendência Térmica:"), "Arquivo deve conter a tendência térmica");
+            } finally {
+                java.nio.file.Files.deleteIfExists(tempFile);
+            }
+        } catch (java.io.IOException e) {
+            throw new AssertionError("Falha inesperada de I/O no teste de exportação: " + e.getMessage());
+        }
     }
 
     private static void testModelosToString() {

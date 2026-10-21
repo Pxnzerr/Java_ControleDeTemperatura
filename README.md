@@ -6,23 +6,27 @@ Sistema Java que demonstra **encapsulamento** aplicado a um ambiente industrial,
 
 | Componente | Proteção e Recursos |
 |---|---|
-| `SensorTemperatura` | Leituras privadas com validação interna (-40°C a 850°C), telemetria com histórico imutável (`Collections.unmodifiableList`), cálculo de médias, extremos e variação térmica (amplitude) |
+| `SensorTemperatura` | Leituras privadas com validação interna (-40°C a 850°C), telemetria com histórico imutável (`Collections.unmodifiableList`), cálculo de médias, extremos, variação térmica (amplitude) e detecção dinâmica de tendência térmica (`TendenciaTermica`) |
+| `TendenciaTermica` | Enum de comportamento térmico dinâmico (`AQUECIMENTO`, `RESFRIAMENTO`, `ESTAVEL`) baseado no histórico de medições |
 | `AlarmeIndustrial` | Estado do alarme inacessível externamente; desativação exige trava liberada e rebloqueio automático |
 | `TravaSeguranca` | Credencial privada; bloqueio permanente após 3 tentativas consecutivas inválidas |
-| `ControladorTemperatura` | Orquestra leituras, aciona alarmes, calcula margem de segurança térmica, permite ajuste seguro de limite e rearme sob credencial, e gera relatório de diagnóstico estruturado |
+| `NivelAlerta` | Enum de classificação operacional preditiva (`NORMAL`, `ATENCAO`, `CRITICO`, `INOPERANTE`) |
+| `ControladorTemperatura` | Orquestra leituras, aciona alarmes, calcula margem de segurança térmica, classifica níveis de alerta operacional, permite ajuste seguro de limite e rearme sob credencial, e gera/exporta relatório de diagnóstico estruturado |
 
 ## Estrutura
 
 ```
 .
 ├── src/main/java/com/industrial/sensor/
-│   ├── SensorTemperatura.java            # Sensor com telemetria e estatísticas térmicas
+│   ├── SensorTemperatura.java            # Sensor com telemetria, extremos e tendência térmica
+│   ├── TendenciaTermica.java             # Enum: AQUECIMENTO, RESFRIAMENTO, ESTAVEL
 │   ├── AlarmeIndustrial.java             # Alarme com controle de trava
 │   ├── TravaSeguranca.java               # Trava com credencial e bloqueio por falhas
-│   ├── ControladorTemperatura.java       # Orquestrador com ajuste seguro e diagnóstico
+│   ├── NivelAlerta.java                  # Enum: NORMAL, ATENCAO, CRITICO, INOPERANTE
+│   ├── ControladorTemperatura.java       # Orquestrador com ajuste seguro, diagnóstico e exportação
 │   └── Main.java                         # Demonstração interativa no terminal
 ├── test/com/industrial/sensor/
-│   └── ControladorTemperaturaTest.java   # Suíte de testes automatizados (21 testes)
+│   └── ControladorTemperaturaTest.java   # Suíte de testes automatizados (24 testes)
 ├── run.bat                               # Script de execução (Windows)
 ├── run.sh                                # Script de execução (Linux/macOS)
 ├── test.bat                              # Script de testes (Windows)

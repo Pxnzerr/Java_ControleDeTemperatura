@@ -1,5 +1,9 @@
 package com.industrial.sensor;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Locale;
 
 public class ControladorTemperatura {
@@ -156,6 +160,19 @@ public class ControladorTemperatura {
                 sensor.getTendenciaTermica(), sensor.getTendenciaTermica().getDescricao()));
         sb.append("=========================================");
         return sb.toString();
+    }
+
+    /**
+     * Exporta o relatório de diagnóstico estruturado para um arquivo no sistema de arquivos.
+     *
+     * @param caminhoDestino caminho do arquivo onde o relatório será salvo
+     * @throws IOException se ocorrer falha na gravação do arquivo
+     */
+    public void exportarRelatorio(Path caminhoDestino) throws IOException {
+        if (caminhoDestino == null) {
+            throw new IllegalArgumentException("Caminho de destino do relatório não pode ser nulo.");
+        }
+        Files.writeString(caminhoDestino, gerarRelatorioDiagnostico(), StandardCharsets.UTF_8);
     }
 
     @Override
