@@ -37,6 +37,7 @@ public class ControladorTemperaturaTest {
         executarTeste("Sensor: Telemetria histórica, médias e imutabilidade de leituras", ControladorTemperaturaTest::testSensorHistoricoEEstatisticasTermicas);
         executarTeste("Sensor: Variação térmica (amplitude) e cálculo de oscilações", ControladorTemperaturaTest::testSensorVariacaoTermica);
         executarTeste("Controlador: Margem de segurança térmica e status de operação segura", ControladorTemperaturaTest::testControladorMargemSegurancaEOperacaoSegura);
+        executarTeste("Controlador: Classificação preditiva de níveis de alerta operacional", ControladorTemperaturaTest::testControladorNivelAlerta);
         executarTeste("Modelos: Representação textual toString() informativa", ControladorTemperaturaTest::testModelosToString);
 
         System.out.println("\n==================================================================");
@@ -367,6 +368,30 @@ public class ControladorTemperaturaTest {
         assertTrue(relatorio.contains("60.0°C"), "Relatório deve conter temperatura atual");
         assertTrue(relatorio.contains("Variação: 35.0°C"), "Relatório deve conter variação térmica calculada");
         assertTrue(relatorio.contains("Margem de Segurança: 40.0°C"), "Relatório deve conter margem de segurança térmica");
+        assertTrue(relatorio.contains("Nível de Alerta: NORMAL"), "Relatório deve conter o nível de alerta operacional");
+    }
+
+    private static void testControladorNivelAlerta() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-ALERTA");
+        TravaSeguranca trava = new TravaSeguranca("1234");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 100.0);
+
+        // Inicial: 25.0°C < 80.0°C (80% de 100.0) -> NORMAL
+        assertEquals(NivelAlerta.NORMAL, controlador.getNivelAlerta(), "Temperatura segura inicial deve ter nível NORMAL");
+
+        // 80.0°C >= 80% do limite -> ATENCAO
+        controlador.processarLeitura(80.0);
+        assertEquals(NivelAlerta.ATENCAO, controlador.getNivelAlerta(), "Temperatura atingindo 80% do limite deve ter nível ATENCAO");
+
+        // 100.0°C >= limite crítico -> CRITICO (alarme ativo)
+        controlador.processarLeitura(100.0);
+        assertEquals(NivelAlerta.CRITICO, controlador.getNivelAlerta(), "Alarme ativo por superaquecimento deve indicar CRITICO");
+
+        // Silenciando alarme mantendo sensor inoperante -> INOPERANTE
+        controlador.autenticarOperador("1234");
+        controlador.silenciarAlarme();
+        assertEquals(NivelAlerta.INOPERANTE, controlador.getNivelAlerta(), "Sensor inoperante com alarme desativado deve indicar INOPERANTE");
     }
 
     private static void testSensorVariacaoTermica() {

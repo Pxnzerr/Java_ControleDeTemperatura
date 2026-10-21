@@ -111,6 +111,29 @@ public class ControladorTemperatura {
     }
 
     /**
+     * Determina o nível de alerta operacional atual do sistema:
+     * - INOPERANTE: quando o sensor foi desligado por segurança ou falha
+     * - CRITICO: quando o alarme está ativo ou a temperatura atingiu o limite crítico
+     * - ATENCAO: quando a temperatura atinge 80% ou mais do limite crítico (alerta preventivo)
+     * - NORMAL: operação regular em faixa segura
+     */
+    public NivelAlerta getNivelAlerta() {
+        if (alarme.isAtivo()) {
+            return NivelAlerta.CRITICO;
+        }
+        if (!sensor.isOperacional()) {
+            return NivelAlerta.INOPERANTE;
+        }
+        if (sensor.getTemperaturaAtual() >= limiteCritico) {
+            return NivelAlerta.CRITICO;
+        }
+        if (sensor.getTemperaturaAtual() >= limiteCritico * 0.8) {
+            return NivelAlerta.ATENCAO;
+        }
+        return NivelAlerta.NORMAL;
+    }
+
+    /**
      * Gera um relatório estruturado de diagnóstico com métricas de telemetria e segurança.
      */
     public String gerarRelatorioDiagnostico() {
@@ -127,6 +150,8 @@ public class ControladorTemperatura {
         sb.append(String.format("Alarme Industrial: %s%s\n",
                 alarme.isAtivo() ? "ATIVO" : "OK",
                 alarme.isAtivo() ? " (Motivo: " + alarme.getMotivo() + ")" : ""));
+        sb.append(String.format("Nível de Alerta: %s (%s)\n",
+                getNivelAlerta(), getNivelAlerta().getDescricao()));
         sb.append("=========================================");
         return sb.toString();
     }
