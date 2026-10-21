@@ -37,6 +37,23 @@ public class ControladorTemperatura {
     }
 
     /**
+     * Retorna a margem de segurança térmica atual em graus Celsius (°C).
+     * Corresponde à diferença entre o limite crítico configurado e a temperatura atual do sensor.
+     * Valores positivos indicam operação segura; zero ou negativo indicam risco/incidente iminente.
+     */
+    public double getMargemSeguranca() {
+        return limiteCritico - sensor.getTemperaturaAtual();
+    }
+
+    /**
+     * Verifica se o sistema opera dentro de uma faixa térmica estável e segura,
+     * confirmando sensor operacional, alarme inativo e margem de segurança estritamente positiva.
+     */
+    public boolean isOperacaoSegura() {
+        return sensor.isOperacional() && !alarme.isAtivo() && getMargemSeguranca() > 0.0;
+    }
+
+    /**
      * Processa leitura do sensor e aciona alarme quando o limite crítico é ultrapassado.
      */
     public boolean processarLeitura(double temperatura) {
@@ -103,9 +120,10 @@ public class ControladorTemperatura {
                 sensor.getIdentificador(), sensor.isOperacional() ? "OPERACIONAL" : "INOPERANTE"));
         sb.append(String.format(Locale.US, "Temperatura Atual: %.1f°C | Média: %.1f°C (Total Leituras: %d)\n",
                 sensor.getTemperaturaAtual(), sensor.getTemperaturaMedia(), sensor.getTotalLeituras()));
-        sb.append(String.format(Locale.US, "Extremos Térmicos: Mín %.1f°C | Máx %.1f°C\n",
-                sensor.getTemperaturaMinimaRegistrada(), sensor.getTemperaturaMaximaRegistrada()));
-        sb.append(String.format(Locale.US, "Limite Crítico Configurado: %.1f°C\n", limiteCritico));
+        sb.append(String.format(Locale.US, "Extremos Térmicos: Mín %.1f°C | Máx %.1f°C (Variação: %.1f°C)\n",
+                sensor.getTemperaturaMinimaRegistrada(), sensor.getTemperaturaMaximaRegistrada(), sensor.getVariacaoTermica()));
+        sb.append(String.format(Locale.US, "Limite Crítico Configurado: %.1f°C | Margem de Segurança: %.1f°C\n",
+                limiteCritico, getMargemSeguranca()));
         sb.append(String.format("Alarme Industrial: %s%s\n",
                 alarme.isAtivo() ? "ATIVO" : "OK",
                 alarme.isAtivo() ? " (Motivo: " + alarme.getMotivo() + ")" : ""));

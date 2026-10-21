@@ -35,6 +35,8 @@ public class ControladorTemperaturaTest {
         executarTeste("Controlador: Rearme do sistema e restauração operacional pós-incidente", ControladorTemperaturaTest::testControladorRearmeSistema);
         executarTeste("Controlador: Geração de relatório de diagnóstico estruturado", ControladorTemperaturaTest::testControladorRelatorioDiagnostico);
         executarTeste("Sensor: Telemetria histórica, médias e imutabilidade de leituras", ControladorTemperaturaTest::testSensorHistoricoEEstatisticasTermicas);
+        executarTeste("Sensor: Variação térmica (amplitude) e cálculo de oscilações", ControladorTemperaturaTest::testSensorVariacaoTermica);
+        executarTeste("Controlador: Margem de segurança térmica e status de operação segura", ControladorTemperaturaTest::testControladorMargemSegurancaEOperacaoSegura);
         executarTeste("Modelos: Representação textual toString() informativa", ControladorTemperaturaTest::testModelosToString);
 
         System.out.println("\n==================================================================");
@@ -363,6 +365,39 @@ public class ControladorTemperaturaTest {
         assertTrue(relatorio.contains("SNS-DIAG"), "Relatório deve conter identificador do sensor");
         assertTrue(relatorio.contains("OPERACIONAL"), "Relatório deve conter status operacional");
         assertTrue(relatorio.contains("60.0°C"), "Relatório deve conter temperatura atual");
+        assertTrue(relatorio.contains("Variação: 35.0°C"), "Relatório deve conter variação térmica calculada");
+        assertTrue(relatorio.contains("Margem de Segurança: 40.0°C"), "Relatório deve conter margem de segurança térmica");
+    }
+
+    private static void testSensorVariacaoTermica() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-VAR");
+        assertEqualsDouble(0.0, sensor.getVariacaoTermica(), 0.001, "Com apenas leitura inicial, variação deve ser 0.0°C");
+
+        sensor.registrarLeitura(60.0);
+        sensor.registrarLeitura(10.0);
+        // Leituras: 25.0, 60.0, 10.0 -> Máx = 60.0, Mín = 10.0 -> Variação = 50.0
+        assertEqualsDouble(50.0, sensor.getVariacaoTermica(), 0.001, "Variação deve ser a diferença entre máxima e mínima (60.0 - 10.0 = 50.0°C)");
+    }
+
+    private static void testControladorMargemSegurancaEOperacaoSegura() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-MARGEM");
+        TravaSeguranca trava = new TravaSeguranca("6543");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 100.0);
+
+        // Temp inicial = 25.0, Limite = 100.0 -> Margem = 75.0
+        assertEqualsDouble(75.0, controlador.getMargemSeguranca(), 0.001, "Margem de segurança inicial deve ser 75.0°C");
+        assertTrue(controlador.isOperacaoSegura(), "Operação inicial deve ser segura");
+
+        // Processa leitura dentro da margem
+        controlador.processarLeitura(80.0);
+        assertEqualsDouble(20.0, controlador.getMargemSeguranca(), 0.001, "Margem deve ser atualizada para 20.0°C");
+        assertTrue(controlador.isOperacaoSegura(), "Operação deve continuar segura");
+
+        // Ultrapassa limite crítico
+        controlador.processarLeitura(105.0);
+        assertEqualsDouble(-5.0, controlador.getMargemSeguranca(), 0.001, "Margem deve ser negativa (-5.0°C) em situação crítica");
+        assertFalse(controlador.isOperacaoSegura(), "Operação não deve ser segura com alarme ativo e limite excedido");
     }
 
     private static void testModelosToString() {

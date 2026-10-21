@@ -6,10 +6,10 @@ Sistema Java que demonstra **encapsulamento** aplicado a um ambiente industrial,
 
 | Componente | Proteção e Recursos |
 |---|---|
-| `SensorTemperatura` | Leituras privadas com validação interna (-40°C a 850°C), telemetria com histórico imutável (`Collections.unmodifiableList`), cálculo de médias e extremos térmicos |
+| `SensorTemperatura` | Leituras privadas com validação interna (-40°C a 850°C), telemetria com histórico imutável (`Collections.unmodifiableList`), cálculo de médias, extremos e variação térmica (amplitude) |
 | `AlarmeIndustrial` | Estado do alarme inacessível externamente; desativação exige trava liberada e rebloqueio automático |
 | `TravaSeguranca` | Credencial privada; bloqueio permanente após 3 tentativas consecutivas inválidas |
-| `ControladorTemperatura` | Orquestra leituras, aciona alarmes, permite ajuste seguro de limite e rearme sob credencial, e gera relatório de diagnóstico estruturado |
+| `ControladorTemperatura` | Orquestra leituras, aciona alarmes, calcula margem de segurança térmica, permite ajuste seguro de limite e rearme sob credencial, e gera relatório de diagnóstico estruturado |
 
 ## Estrutura
 
@@ -22,7 +22,7 @@ Sistema Java que demonstra **encapsulamento** aplicado a um ambiente industrial,
 │   ├── ControladorTemperatura.java       # Orquestrador com ajuste seguro e diagnóstico
 │   └── Main.java                         # Demonstração interativa no terminal
 ├── test/com/industrial/sensor/
-│   └── ControladorTemperaturaTest.java   # Suíte de testes automatizados (19 testes)
+│   └── ControladorTemperaturaTest.java   # Suíte de testes automatizados (21 testes)
 ├── run.bat                               # Script de execução (Windows)
 ├── run.sh                                # Script de execução (Linux/macOS)
 ├── test.bat                              # Script de testes (Windows)

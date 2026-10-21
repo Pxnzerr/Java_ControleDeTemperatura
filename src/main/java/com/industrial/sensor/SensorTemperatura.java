@@ -96,6 +96,14 @@ public class SensorTemperatura {
     }
 
     /**
+     * Retorna a variação térmica (amplitude) registrada no sensor (máxima - mínima).
+     * Indicador essencial para monitoramento de estresse térmico e oscilações do maquinário.
+     */
+    public double getVariacaoTermica() {
+        return getTemperaturaMaximaRegistrada() - getTemperaturaMinimaRegistrada();
+    }
+
+    /**
      * Registra leitura somente se estiver dentro dos limites físicos do maquinário.
      * Retorna false quando a leitura é rejeitada por segurança.
      */
