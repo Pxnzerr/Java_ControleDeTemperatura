@@ -58,6 +58,23 @@ public class SensorTemperatura {
         return Collections.unmodifiableList(new ArrayList<>(historicoLeituras));
     }
 
+    /**
+     * Retorna uma lista imutável com as N últimas leituras registradas pelo sensor.
+     * Se a quantidade for maior que o total disponível, retorna todo o histórico.
+     * Se a quantidade for menor ou igual a zero, retorna lista vazia.
+     *
+     * @param quantidade número de leituras recentes solicitadas
+     * @return lista imutável contendo as leituras solicitadas
+     */
+    public List<Double> getUltimasLeituras(int quantidade) {
+        if (quantidade <= 0) {
+            return Collections.emptyList();
+        }
+        int total = historicoLeituras.size();
+        int inicio = Math.max(0, total - quantidade);
+        return Collections.unmodifiableList(new ArrayList<>(historicoLeituras.subList(inicio, total)));
+    }
+
     public int getTotalLeituras() {
         return historicoLeituras.size();
     }

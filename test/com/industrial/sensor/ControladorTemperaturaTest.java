@@ -1,5 +1,6 @@
 package com.industrial.sensor;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -40,6 +41,7 @@ public class ControladorTemperaturaTest {
         executarTeste("Controlador: Margem de segurança térmica e status de operação segura", ControladorTemperaturaTest::testControladorMargemSegurancaEOperacaoSegura);
         executarTeste("Controlador: Classificação preditiva de níveis de alerta operacional", ControladorTemperaturaTest::testControladorNivelAlerta);
         executarTeste("Controlador: Exportação do relatório de diagnóstico para arquivo", ControladorTemperaturaTest::testControladorExportacaoRelatorio);
+        executarTeste("Sensor: Consulta de últimas N leituras e imutabilidade de telemetria", ControladorTemperaturaTest::testSensorUltimasLeituras);
         executarTeste("Modelos: Representação textual toString() informativa", ControladorTemperaturaTest::testModelosToString);
 
         System.out.println("\n==================================================================");
@@ -483,6 +485,47 @@ public class ControladorTemperaturaTest {
         } catch (java.io.IOException e) {
             throw new AssertionError("Falha inesperada de I/O no teste de exportação: " + e.getMessage());
         }
+    }
+
+    private static void testSensorUltimasLeituras() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-RECENT");
+        TravaSeguranca trava = new TravaSeguranca("1234");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 100.0);
+
+        // Inicial: apenas leitura inicial 25.0°C
+        assertEquals(1, sensor.getUltimasLeituras(5).size(), "Com apenas 1 leitura, deve retornar 1 elemento");
+        assertEqualsDouble(25.0, sensor.getUltimasLeituras(1).get(0), 0.001, "A leitura deve ser 25.0°C");
+
+        // Quantidade <= 0 retorna lista vazia
+        assertTrue(sensor.getUltimasLeituras(0).isEmpty(), "Quantidade 0 deve retornar lista vazia");
+        assertTrue(sensor.getUltimasLeituras(-3).isEmpty(), "Quantidade negativa deve retornar lista vazia");
+
+        // Adiciona mais leituras
+        sensor.registrarLeitura(30.0);
+        sensor.registrarLeitura(40.0);
+        sensor.registrarLeitura(50.0);
+        // Histórico: [25.0, 30.0, 40.0, 50.0]
+
+        // Obter últimas 2 leituras
+        List<Double> ultimas2 = sensor.getUltimasLeituras(2);
+        assertEquals(2, ultimas2.size(), "Deve retornar exatamente 2 leituras");
+        assertEqualsDouble(40.0, ultimas2.get(0), 0.001, "Penúltima leitura deve ser 40.0°C");
+        assertEqualsDouble(50.0, ultimas2.get(1), 0.001, "Última leitura deve ser 50.0°C");
+
+        // Obter via ControladorTemperatura
+        List<Double> recentesControlador = controlador.obterLeiturasRecentes(3);
+        assertEquals(3, recentesControlador.size(), "Controlador deve repassar as 3 leituras");
+        assertEqualsDouble(30.0, recentesControlador.get(0), 0.001, "Primeira das 3 deve ser 30.0°C");
+
+        // Validar imutabilidade da lista retornada
+        boolean bloqueouModificacao = false;
+        try {
+            ultimas2.add(99.0);
+        } catch (UnsupportedOperationException e) {
+            bloqueouModificacao = true;
+        }
+        assertTrue(bloqueouModificacao, "Lista de últimas leituras deve ser imutável");
     }
 
     private static void testModelosToString() {

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 
 public class ControladorTemperatura {
@@ -38,6 +39,13 @@ public class ControladorTemperatura {
 
     public double getLimiteCritico() {
         return limiteCritico;
+    }
+
+    /**
+     * Retorna as N últimas leituras registradas pelo sensor para inspeção recente.
+     */
+    public List<Double> obterLeiturasRecentes(int quantidade) {
+        return sensor.getUltimasLeituras(quantidade);
     }
 
     /**
