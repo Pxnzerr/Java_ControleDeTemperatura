@@ -18,6 +18,8 @@ public class SensorTemperatura {
     private boolean operacional;
     private final List<Double> historicoLeituras;
     private double somaLeituras;
+    private double temperaturaMaximaRegistrada;
+    private double temperaturaMinimaRegistrada;
 
     public SensorTemperatura(String identificador) {
         if (identificador == null || identificador.isBlank()) {
@@ -29,6 +31,8 @@ public class SensorTemperatura {
         this.historicoLeituras = new ArrayList<>();
         this.historicoLeituras.add(25.0);
         this.somaLeituras = 25.0;
+        this.temperaturaMaximaRegistrada = 25.0;
+        this.temperaturaMinimaRegistrada = 25.0;
     }
 
     public String getIdentificador() {
@@ -90,26 +94,14 @@ public class SensorTemperatura {
         if (historicoLeituras.isEmpty()) {
             return temperaturaAtual;
         }
-        double max = historicoLeituras.get(0);
-        for (double t : historicoLeituras) {
-            if (t > max) {
-                max = t;
-            }
-        }
-        return max;
+        return temperaturaMaximaRegistrada;
     }
 
     public double getTemperaturaMinimaRegistrada() {
         if (historicoLeituras.isEmpty()) {
             return temperaturaAtual;
         }
-        double min = historicoLeituras.get(0);
-        for (double t : historicoLeituras) {
-            if (t < min) {
-                min = t;
-            }
-        }
-        return min;
+        return temperaturaMinimaRegistrada;
     }
 
     /**
@@ -154,6 +146,12 @@ public class SensorTemperatura {
         this.temperaturaAtual = novaTemperatura;
         this.historicoLeituras.add(novaTemperatura);
         this.somaLeituras += novaTemperatura;
+        if (novaTemperatura > this.temperaturaMaximaRegistrada) {
+            this.temperaturaMaximaRegistrada = novaTemperatura;
+        }
+        if (novaTemperatura < this.temperaturaMinimaRegistrada) {
+            this.temperaturaMinimaRegistrada = novaTemperatura;
+        }
         return true;
     }
 

@@ -295,10 +295,11 @@ public class ControladorTemperaturaTest {
         sensor.registrarLeitura(45.0);
         sensor.registrarLeitura(15.0);
 
-        assertEquals(4, sensor.getTotalLeituras(), "Total de leituras válidas deve ser 4");
-        assertEqualsDouble(15.0, sensor.getTemperaturaMinimaRegistrada(), 0.001, "Mínima registrada deve ser 15.0°C");
-        assertEqualsDouble(45.0, sensor.getTemperaturaMaximaRegistrada(), 0.001, "Máxima registrada deve ser 45.0°C");
-        assertEqualsDouble(30.0, sensor.getTemperaturaMedia(), 0.001, "Média deve ser (25+35+45+15)/4 = 30.0°C");
+        sensor.registrarLeitura(20.0);
+        assertEquals(5, sensor.getTotalLeituras(), "Total de leituras válidas deve ser 5");
+        assertEqualsDouble(15.0, sensor.getTemperaturaMinimaRegistrada(), 0.001, "Mínima mantida em 15.0°C");
+        assertEqualsDouble(45.0, sensor.getTemperaturaMaximaRegistrada(), 0.001, "Máxima mantida em 45.0°C");
+        assertEqualsDouble(28.0, sensor.getTemperaturaMedia(), 0.001, "Média deve ser (25+35+45+15+20)/5 = 28.0°C");
 
         // Validação de encapsulamento e imutabilidade da lista de histórico
         boolean modificacaoBloqueada = false;
