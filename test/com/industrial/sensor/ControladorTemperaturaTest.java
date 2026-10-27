@@ -43,6 +43,7 @@ public class ControladorTemperaturaTest {
         executarTeste("Controlador: Exportação do relatório de diagnóstico para arquivo", ControladorTemperaturaTest::testControladorExportacaoRelatorio);
         executarTeste("Sensor: Consulta de últimas N leituras e imutabilidade de telemetria", ControladorTemperaturaTest::testSensorUltimasLeituras);
         executarTeste("Sensor: Verificação de temperatura em faixa ideal de operação", ControladorTemperaturaTest::testSensorFaixaIdeal);
+        executarTeste("Controlador: Contagem acumulada de incidentes críticos de temperatura", ControladorTemperaturaTest::testControladorContadorIncidentesCriticos);
         executarTeste("Modelos: Representação textual toString() informativa", ControladorTemperaturaTest::testModelosToString);
 
         System.out.println("\n==================================================================");
@@ -376,6 +377,7 @@ public class ControladorTemperaturaTest {
         assertTrue(relatorio.contains("Margem de Segurança: 40.0°C"), "Relatório deve conter margem de segurança térmica");
         assertTrue(relatorio.contains("Nível de Alerta: NORMAL"), "Relatório deve conter o nível de alerta operacional");
         assertTrue(relatorio.contains("Tendência Térmica: AQUECIMENTO"), "Relatório deve conter a tendência térmica recente");
+        assertTrue(relatorio.contains("Incidentes Críticos Registrados: 0"), "Relatório deve conter contador de incidentes");
     }
 
     private static void testSensorTendenciaTermica() {
@@ -550,6 +552,31 @@ public class ControladorTemperaturaTest {
             excecaoLancada = true;
         }
         assertTrue(excecaoLancada, "Deve lançar IllegalArgumentException para limites invertidos");
+    }
+
+    private static void testControladorContadorIncidentesCriticos() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-INCIDENTES");
+        TravaSeguranca trava = new TravaSeguranca("1234");
+        AlarmeIndustrial alarme = new AlarmeIndustrial(trava);
+        ControladorTemperatura controlador = new ControladorTemperatura(sensor, alarme, trava, 100.0);
+
+        assertEquals(0, controlador.getTotalIncidentesCriticos(), "Contador deve iniciar em zero");
+
+        // Leitura normal dentro da faixa
+        controlador.processarLeitura(70.0);
+        assertEquals(0, controlador.getTotalIncidentesCriticos(), "Leitura segura não incrementa incidentes");
+
+        // 1º Incidente crítico
+        controlador.processarLeitura(105.0);
+        assertEquals(1, controlador.getTotalIncidentesCriticos(), "Superaquecimento deve incrementar incidentes para 1");
+
+        // Rearma sistema com aumento do limite para permitir novo teste
+        controlador.ajustarLimiteCritico(150.0, "1234");
+        controlador.rearmarSistema("1234");
+
+        // 2º Incidente crítico
+        controlador.processarLeitura(160.0);
+        assertEquals(2, controlador.getTotalIncidentesCriticos(), "Segundo superaquecimento deve incrementar incidentes para 2");
     }
 
     private static void testModelosToString() {

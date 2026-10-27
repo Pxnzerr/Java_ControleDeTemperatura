@@ -13,6 +13,7 @@ public class ControladorTemperatura {
     private final AlarmeIndustrial alarme;
     private final TravaSeguranca trava;
     private double limiteCritico;
+    private int totalIncidentesCriticos;
 
     public ControladorTemperatura(SensorTemperatura sensor, AlarmeIndustrial alarme,
                                     TravaSeguranca trava, double limiteCritico) {
@@ -23,6 +24,7 @@ public class ControladorTemperatura {
         this.alarme = alarme;
         this.trava = trava;
         this.limiteCritico = limiteCritico;
+        this.totalIncidentesCriticos = 0;
     }
 
     public SensorTemperatura getSensor() {
@@ -39,6 +41,10 @@ public class ControladorTemperatura {
 
     public double getLimiteCritico() {
         return limiteCritico;
+    }
+
+    public int getTotalIncidentesCriticos() {
+        return totalIncidentesCriticos;
     }
 
     /**
@@ -73,6 +79,7 @@ public class ControladorTemperatura {
             return false;
         }
         if (temperatura >= limiteCritico) {
+            totalIncidentesCriticos++;
             alarme.disparar("Temperatura crítica: " + temperatura + "°C");
             sensor.marcarInoperante();
         }
@@ -159,6 +166,7 @@ public class ControladorTemperatura {
                 sensor.getTemperaturaMinimaRegistrada(), sensor.getTemperaturaMaximaRegistrada(), sensor.getVariacaoTermica()));
         sb.append(String.format(Locale.US, "Limite Crítico Configurado: %.1f°C | Margem de Segurança: %.1f°C\n",
                 limiteCritico, getMargemSeguranca()));
+        sb.append(String.format("Incidentes Críticos Registrados: %d\n", totalIncidentesCriticos));
         sb.append(String.format("Alarme Industrial: %s%s\n",
                 alarme.isAtivo() ? "ATIVO" : "OK",
                 alarme.isAtivo() ? " (Motivo: " + alarme.getMotivo() + ")" : ""));
