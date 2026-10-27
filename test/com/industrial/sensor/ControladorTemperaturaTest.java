@@ -44,6 +44,7 @@ public class ControladorTemperaturaTest {
         executarTeste("Sensor: Consulta de últimas N leituras e imutabilidade de telemetria", ControladorTemperaturaTest::testSensorUltimasLeituras);
         executarTeste("Sensor: Verificação de temperatura em faixa ideal de operação", ControladorTemperaturaTest::testSensorFaixaIdeal);
         executarTeste("Controlador: Contagem acumulada de incidentes críticos de temperatura", ControladorTemperaturaTest::testControladorContadorIncidentesCriticos);
+        executarTeste("Conversor: Conversão entre escalas Celsius, Fahrenheit e Kelvin", ControladorTemperaturaTest::testConversorTemperatura);
         executarTeste("Modelos: Representação textual toString() informativa", ControladorTemperaturaTest::testModelosToString);
 
         System.out.println("\n==================================================================");
@@ -577,6 +578,36 @@ public class ControladorTemperaturaTest {
         // 2º Incidente crítico
         controlador.processarLeitura(160.0);
         assertEquals(2, controlador.getTotalIncidentesCriticos(), "Segundo superaquecimento deve incrementar incidentes para 2");
+    }
+
+    private static void testConversorTemperatura() {
+        // Celsius para Fahrenheit
+        assertEqualsDouble(32.0, ConversorTemperatura.paraFahrenheit(0.0), 0.001, "0°C deve ser 32°F");
+        assertEqualsDouble(212.0, ConversorTemperatura.paraFahrenheit(100.0), 0.001, "100°C deve ser 212°F");
+        assertEqualsDouble(-40.0, ConversorTemperatura.paraFahrenheit(-40.0), 0.001, "-40°C deve ser -40°F");
+
+        // Celsius para Kelvin
+        assertEqualsDouble(273.15, ConversorTemperatura.paraKelvin(0.0), 0.001, "0°C deve ser 273.15 K");
+        assertEqualsDouble(373.15, ConversorTemperatura.paraKelvin(100.0), 0.001, "100°C deve ser 373.15 K");
+
+        // Inversões
+        assertEqualsDouble(0.0, ConversorTemperatura.paraCelsiusDeFahrenheit(32.0), 0.001, "32°F deve ser 0°C");
+        assertEqualsDouble(100.0, ConversorTemperatura.paraCelsiusDeFahrenheit(212.0), 0.001, "212°F deve ser 100°C");
+        assertEqualsDouble(0.0, ConversorTemperatura.paraCelsiusDeKelvin(273.15), 0.001, "273.15 K deve ser 0°C");
+
+        // Validação de Kelvin negativo
+        boolean erroKelvinNegativo = false;
+        try {
+            ConversorTemperatura.paraCelsiusDeKelvin(-1.0);
+        } catch (IllegalArgumentException e) {
+            erroKelvinNegativo = true;
+        }
+        assertTrue(erroKelvinNegativo, "Kelvin negativo deve lançar IllegalArgumentException");
+
+        // Métodos de conveniência no SensorTemperatura (temperatura inicial padrão = 25.0°C)
+        SensorTemperatura sensor = new SensorTemperatura("SNS-CONV");
+        assertEqualsDouble(77.0, sensor.getTemperaturaAtualFahrenheit(), 0.001, "25°C deve corresponder a 77°F");
+        assertEqualsDouble(298.15, sensor.getTemperaturaAtualKelvin(), 0.001, "25°C deve corresponder a 298.15 K");
     }
 
     private static void testModelosToString() {

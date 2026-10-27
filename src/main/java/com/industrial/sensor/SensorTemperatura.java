@@ -43,6 +43,20 @@ public class SensorTemperatura {
         return temperaturaAtual;
     }
 
+    /**
+     * Retorna a temperatura atual convertida para a escala Fahrenheit (°F).
+     */
+    public double getTemperaturaAtualFahrenheit() {
+        return ConversorTemperatura.paraFahrenheit(temperaturaAtual);
+    }
+
+    /**
+     * Retorna a temperatura atual convertida para a escala Kelvin (K).
+     */
+    public double getTemperaturaAtualKelvin() {
+        return ConversorTemperatura.paraKelvin(temperaturaAtual);
+    }
+
     public boolean isOperacional() {
         return operacional;
     }
