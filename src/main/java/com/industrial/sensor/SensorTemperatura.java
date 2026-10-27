@@ -113,6 +113,21 @@ public class SensorTemperatura {
     }
 
     /**
+     * Verifica se a temperatura atual do sensor está contida na faixa operacional ideal informada.
+     * Lança IllegalArgumentException se o limite inferior for maior que o superior.
+     *
+     * @param limiteInferior temperatura mínima desejada para a faixa
+     * @param limiteSuperior temperatura máxima desejada para a faixa
+     * @return true se a leitura atual estiver dentro do intervalo fechado [limiteInferior, limiteSuperior]
+     */
+    public boolean isEmFaixaIdeal(double limiteInferior, double limiteSuperior) {
+        if (limiteInferior > limiteSuperior) {
+            throw new IllegalArgumentException("Limite inferior não pode ser maior que o limite superior.");
+        }
+        return temperaturaAtual >= limiteInferior && temperaturaAtual <= limiteSuperior;
+    }
+
+    /**
      * Determina a tendência térmica do maquinário comparando a temperatura atual
      * com a medição imediatamente anterior.
      * Retorna ESTAVEL caso haja apenas uma leitura ou oscilação menor que 0.05°C.

@@ -42,6 +42,7 @@ public class ControladorTemperaturaTest {
         executarTeste("Controlador: Classificação preditiva de níveis de alerta operacional", ControladorTemperaturaTest::testControladorNivelAlerta);
         executarTeste("Controlador: Exportação do relatório de diagnóstico para arquivo", ControladorTemperaturaTest::testControladorExportacaoRelatorio);
         executarTeste("Sensor: Consulta de últimas N leituras e imutabilidade de telemetria", ControladorTemperaturaTest::testSensorUltimasLeituras);
+        executarTeste("Sensor: Verificação de temperatura em faixa ideal de operação", ControladorTemperaturaTest::testSensorFaixaIdeal);
         executarTeste("Modelos: Representação textual toString() informativa", ControladorTemperaturaTest::testModelosToString);
 
         System.out.println("\n==================================================================");
@@ -527,6 +528,28 @@ public class ControladorTemperaturaTest {
             bloqueouModificacao = true;
         }
         assertTrue(bloqueouModificacao, "Lista de últimas leituras deve ser imutável");
+    }
+
+    private static void testSensorFaixaIdeal() {
+        SensorTemperatura sensor = new SensorTemperatura("SNS-IDEAL");
+        // Temperatura inicial é 25.0°C
+        assertTrue(sensor.isEmFaixaIdeal(20.0, 30.0), "25°C deve estar dentro da faixa [20°C, 30°C]");
+        assertTrue(sensor.isEmFaixaIdeal(25.0, 25.0), "25°C deve estar no limite exato da faixa [25°C, 25°C]");
+        assertFalse(sensor.isEmFaixaIdeal(30.0, 50.0), "25°C não deve estar na faixa [30°C, 50°C]");
+
+        // Registrar leitura fora da faixa
+        sensor.registrarLeitura(45.0);
+        assertFalse(sensor.isEmFaixaIdeal(20.0, 30.0), "45°C não deve estar na faixa [20°C, 30°C]");
+        assertTrue(sensor.isEmFaixaIdeal(40.0, 60.0), "45°C deve estar na faixa [40°C, 60°C]");
+
+        // Intervalo inválido (limite inferior > superior)
+        boolean excecaoLancada = false;
+        try {
+            sensor.isEmFaixaIdeal(50.0, 30.0);
+        } catch (IllegalArgumentException e) {
+            excecaoLancada = true;
+        }
+        assertTrue(excecaoLancada, "Deve lançar IllegalArgumentException para limites invertidos");
     }
 
     private static void testModelosToString() {
